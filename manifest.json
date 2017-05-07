@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name"            : "Screenshot Capture",
+  "name"            : "Capture to Query",
   "version"         : "1.7",
-  "description"     : "Screenshot Capture",
+  "description"     : "Capture to Query",
 
   "browser_action": {
     "default_icon": {
@@ -45,6 +45,7 @@
 
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "http://*/*"
   ]
 }

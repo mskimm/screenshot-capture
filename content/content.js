@@ -52,45 +52,16 @@ var init = (done) => {
 
 var capture = (force) => {
   chrome.storage.sync.get((config) => {
-    if (selection && (config.method === 'crop' || (config.method === 'wait' && force))) {
       jcrop.release()
       setTimeout(() => {
         chrome.runtime.sendMessage({
           message: 'capture', area: selection, dpr: devicePixelRatio
         }, (res) => {
           overlay(false)
-          selection = null
-          save(res.image)
+          selection = null;
         })
       }, 50)
-    }
-    else if (config.method === 'view') {
-      chrome.runtime.sendMessage({
-        message: 'capture',
-        area: {x: 0, y: 0, w: innerWidth, h: innerHeight}, dpr: devicePixelRatio
-      }, (res) => {
-        overlay(false)
-        save(res.image)
-      })
-    }
   })
-}
-
-var filename = () => {
-  var pad = (n) => ((n = n + '') && (n.length >= 2 ? n : '0' + n))
-  var timestamp = ((now) =>
-    [pad(now.getFullYear()), pad(now.getMonth() + 1), pad(now.getDate())].join('-')
-    + ' - ' +
-    [pad(now.getHours()), pad(now.getMinutes()), pad(now.getSeconds())].join('-')
-  )(new Date())
-  return 'Screenshot Capture - ' + timestamp + '.png'
-}
-
-var save = (image) => {
-  var link = document.createElement('a')
-  link.download = filename()
-  link.href = image
-  link.click()
 }
 
 window.addEventListener('resize', ((timeout) => () => {

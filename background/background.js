@@ -1,132 +1,119 @@
+var chrome = chrome;
 
-// chrome.storage.sync.clear()
-
-chrome.storage.sync.get((config) => {
-  if (!config.method) {
-    chrome.storage.sync.set({method: 'crop'})
+chrome.storage.sync.get(function(config) {
+  if (!config.url) {
+    chrome.storage.sync.set({url: '#'})
   }
-  if (config.dpr === undefined) {
-    chrome.storage.sync.set({dpr: true})
-  }
-})
+});
 
-function inject (tab) {
-  chrome.tabs.sendMessage(tab.id, {message: 'init'}, (res) => {
+function inject(tab) {
+  chrome.tabs.sendMessage(tab.id, {message: 'init'}, function(res) {
     if (res) {
-      clearTimeout(timeout)
+      clearTimeout(timeout);
     }
-  })
+  });
 
-  var timeout = setTimeout(() => {
-    chrome.tabs.insertCSS(tab.id, {file: 'vendor/jquery.Jcrop.min.css', runAt: 'document_start'})
-    chrome.tabs.insertCSS(tab.id, {file: 'css/content.css', runAt: 'document_start'})
+  var timeout = setTimeout(function() {
+    chrome.tabs.insertCSS(tab.id, {file: 'vendor/jquery.Jcrop.min.css', runAt: 'document_start'});
+    chrome.tabs.insertCSS(tab.id, {file: 'css/content.css', runAt: 'document_start'});
 
-    chrome.tabs.executeScript(tab.id, {file: 'vendor/jquery.min.js', runAt: 'document_start'})
-    chrome.tabs.executeScript(tab.id, {file: 'vendor/jquery.Jcrop.min.js', runAt: 'document_start'})
-    chrome.tabs.executeScript(tab.id, {file: 'content/content.js', runAt: 'document_start'})
+    chrome.tabs.executeScript(tab.id, {file: 'vendor/jquery.min.js', runAt: 'document_start'});
+    chrome.tabs.executeScript(tab.id, {file: 'vendor/jquery.Jcrop.min.js', runAt: 'document_start'});
+    chrome.tabs.executeScript(tab.id, {file: 'content/content.js', runAt: 'document_start'});
 
-    setTimeout(() => {
-      chrome.tabs.sendMessage(tab.id, {message: 'init'})
-    }, 100)
-  }, 100)
+    setTimeout(function () {
+      chrome.tabs.sendMessage(tab.id, {message: 'init'});
+    }, 100);
+  }, 100);
 }
 
-chrome.browserAction.onClicked.addListener((tab) => {
-  inject(tab)
-})
+chrome.browserAction.onClicked.addListener(function(tab) {
+  inject(tab);
+});
 
-chrome.commands.onCommand.addListener((command) => {
+chrome.commands.onCommand.addListener(function(command) {
   if (command === 'take-screenshot') {
-    chrome.tabs.getSelected(null, (tab) => {
-      inject(tab)
+    chrome.tabs.getSelected(null, function(tab) {
+      inject(tab);
     })
   }
-})
+});
 
-chrome.runtime.onMessage.addListener((req, sender, res) => {
+chrome.runtime.onMessage.addListener(function(req, sender, res) {
   if (req.message === 'capture') {
-    chrome.tabs.getSelected(null, (tab) => {
-
-      chrome.tabs.captureVisibleTab(tab.windowId, {format: 'png'}, (image) => {
+    chrome.tabs.getSelected(null, function(tab) {
+      chrome.tabs.captureVisibleTab(tab.windowId, {format: 'png'}, function(image) {
         // image is base64
-
-        chrome.storage.sync.get((config) => {
-          if (config.method === 'view') {
-            if (req.dpr !== 1 && !config.dpr) {
-              crop(image, req.area, req.dpr, config.dpr, (cropped) => {
-                res({message: 'image', image: cropped})
-              })
-            }
-            else {
-              res({message: 'image', image: image})
-            }
-          }
-          else {
-            crop(image, req.area, req.dpr, config.dpr, (cropped) => {
-              res({message: 'image', image: cropped})
-            })
-          }
-        })
-      })
-    })
+        chrome.storage.sync.get(function(config) {
+          crop(image, req.area, req.dpr, true, config.url, function(cropped) {
+            res({message: 'image', image: cropped});
+          });
+        });
+      });
+    });
   }
   else if (req.message === 'active') {
     if (req.active) {
-      chrome.storage.sync.get((config) => {
-        if (config.method === 'view') {
-          chrome.browserAction.setTitle({tabId: sender.tab.id, title: 'Capture Viewport'})
-          chrome.browserAction.setBadgeText({tabId: sender.tab.id, text: '⬒'})
-        }
-        // else if (config.method === 'full') {
-        //   chrome.browserAction.setTitle({tabId: sender.tab.id, title: 'Capture Document'})
-        //   chrome.browserAction.setBadgeText({tabId: sender.tab.id, text: '⬛'})
-        // }
-        else if (config.method === 'crop') {
-          chrome.browserAction.setTitle({tabId: sender.tab.id, title: 'Crop and Save'})
-          chrome.browserAction.setBadgeText({tabId: sender.tab.id, text: '◩'})
-        }
-        else if (config.method === 'wait') {
-          chrome.browserAction.setTitle({tabId: sender.tab.id, title: 'Crop and Wait'})
-          chrome.browserAction.setBadgeText({tabId: sender.tab.id, text: '◪'})
-        }
-      })
+      chrome.browserAction.setTitle({tabId: sender.tab.id, title: 'Capture to Query'});
+      chrome.browserAction.setBadgeText({tabId: sender.tab.id, text: '◩'});
     }
     else {
-      chrome.browserAction.setTitle({tabId: sender.tab.id, title: 'Screenshot Capture'})
-      chrome.browserAction.setBadgeText({tabId: sender.tab.id, text: ''})
+      chrome.browserAction.setTitle({tabId: sender.tab.id, title: 'Screenshot Capture'});
+      chrome.browserAction.setBadgeText({tabId: sender.tab.id, text: ''});
     }
   }
-  return true
-})
+  return true;
+});
 
-function crop (image, area, dpr, preserve, done) {
-  var top = area.y * dpr
-  var left = area.x * dpr
-  var width = area.w * dpr
-  var height = area.h * dpr
-  var w = (dpr !== 1 && preserve) ? width : area.w
-  var h = (dpr !== 1 && preserve) ? height : area.h
+function show(data) {
+  chrome.tabs.create(
+    { url: chrome.runtime.getURL("/content/show.html") },
+    function(tab) {
+      var handler = function(tabId, changeInfo) {
+        if(tabId === tab.id && changeInfo.status === "complete"){
+          chrome.tabs.onUpdated.removeListener(handler);
+          chrome.tabs.sendMessage(tabId, data);
+        }
+      };
 
-  var canvas = null
+      // in case we're faster than page load (usually):
+      chrome.tabs.onUpdated.addListener(handler);
+      // just in case we're too late with the listener:
+      chrome.tabs.sendMessage(tab.id, data);
+    }
+  );
+}
+
+function crop (image, area, dpr, preserve, url, done) {
+  var top = area.y * dpr;
+  var left = area.x * dpr;
+  var width = area.w * dpr;
+  var height = area.h * dpr;
+  var w = (dpr !== 1 && preserve) ? width : area.w;
+  var h = (dpr !== 1 && preserve) ? height : area.h;
+
+  var canvas = null;
   if (!canvas) {
-    canvas = document.createElement('canvas')
-    document.body.appendChild(canvas)
+    canvas = document.createElement('canvas');
+    document.body.appendChild(canvas);
   }
-  canvas.width = w
-  canvas.height = h
+  canvas.width = w;
+  canvas.height = h;
 
   var img = new Image()
   img.onload = () => {
-    var context = canvas.getContext('2d')
+    var context = canvas.getContext('2d');
     context.drawImage(img,
       left, top,
       width, height,
       0, 0,
       w, h
-    )
+    );
 
-    var cropped = canvas.toDataURL('image/png')
-    done(cropped)
+    var cropped = canvas.toDataURL('image/png');
+
+    show({url: url, image: cropped});
+    done(cropped);
   }
-  img.src = image
+  img.src = image;
 }
