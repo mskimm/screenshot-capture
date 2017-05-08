@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name"            : "Capture to Query",
-  "version"         : "1.7",
+  "version"         : "1.9",
   "description"     : "Capture to Query",
 
   "browser_action": {
@@ -9,7 +9,7 @@
       "19" : "/images/icon19.png",
       "38" : "/images/icon38.png"
     },
-    "default_title": "Screenshot Capture"
+    "default_title": "Capture to Query"
   },
 
   "options_page": "/content/options.html",
@@ -41,11 +41,12 @@
     "128" : "images/icon128.png"
   },
 
-  "homepage_url": "https://chrome.google.com/webstore/detail/screenshot-capture/giabbpobpebjfegnpcclkocepcgockkc",
+  "homepage_url": "https://chrome.google.com/webstore/detail/capture-to-query/famijgllemmjpngpkmpepeobelkdfehf",
 
   "permissions": [
     "storage",
     "activeTab",
-    "http://*/*"
+    "http://*/*",
+    "https://*/*"
   ]
 }

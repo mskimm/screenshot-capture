@@ -1,11 +1,11 @@
 
-var jcrop, selection
+var jcrop, selection;
 
 var overlay = ((active) => (state) => {
-  active = (typeof state === 'boolean') ? state : (state === null) ? active : !active
-  $('.jcrop-holder')[active ? 'show' : 'hide']()
+  active = (typeof state === 'boolean') ? state : (state === null) ? active : !active;
+  $('.jcrop-holder')[active ? 'show' : 'hide']();
   chrome.runtime.sendMessage({message: 'active', active})
-})(false)
+})(false);
 
 var image = (done) => {
   var image = new Image()
@@ -50,19 +50,19 @@ var init = (done) => {
   })
 }
 
-var capture = (force) => {
-  chrome.storage.sync.get((config) => {
-      jcrop.release()
-      setTimeout(() => {
-        chrome.runtime.sendMessage({
-          message: 'capture', area: selection, dpr: devicePixelRatio
-        }, (res) => {
-          overlay(false)
-          selection = null;
-        })
-      }, 50)
-  })
-}
+var capture = function (force) {
+  if (selection && force) {
+    jcrop.release();
+    setTimeout(function () {
+      chrome.runtime.sendMessage({
+        message: 'capture', area: selection, dpr: devicePixelRatio
+      }, function (res) {
+        overlay(false);
+        selection = null;
+      })
+    }, 50);
+  }
+};
 
 window.addEventListener('resize', ((timeout) => () => {
   clearTimeout(timeout)
@@ -74,18 +74,18 @@ window.addEventListener('resize', ((timeout) => () => {
 
 chrome.runtime.onMessage.addListener((req, sender, res) => {
   if (req.message === 'init') {
-    res({}) // prevent re-injecting
+    res({}); // prevent re-injecting
 
     if (!jcrop) {
       image(() => init(() => {
-        overlay()
-        capture()
-      }))
+        overlay();
+        capture();
+      }));
     }
     else {
-      overlay()
-      capture(true)
+      overlay();
+      capture(true);
     }
   }
-  return true
+  return true;
 })
