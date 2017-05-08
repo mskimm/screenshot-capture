@@ -15,10 +15,13 @@ function inject(tab) {
 
   var timeout = setTimeout(function() {
     chrome.tabs.insertCSS(tab.id, {file: 'vendor/jquery.Jcrop.min.css', runAt: 'document_start'});
+    chrome.tabs.insertCSS(tab.id, {file: 'vendor/slick.css', runAt: 'document_start'});
+    chrome.tabs.insertCSS(tab.id, {file: 'vendor/slick-theme.css', runAt: 'document_start'});
     chrome.tabs.insertCSS(tab.id, {file: 'css/content.css', runAt: 'document_start'});
 
     chrome.tabs.executeScript(tab.id, {file: 'vendor/jquery.min.js', runAt: 'document_start'});
     chrome.tabs.executeScript(tab.id, {file: 'vendor/jquery.Jcrop.min.js', runAt: 'document_start'});
+    chrome.tabs.executeScript(tab.id, {file: 'vendor/slick.min.js', runAt: 'document_start'});
     chrome.tabs.executeScript(tab.id, {file: 'content/content.js', runAt: 'document_start'});
 
     setTimeout(function () {
@@ -45,8 +48,8 @@ chrome.runtime.onMessage.addListener(function(req, sender, res) {
       chrome.tabs.captureVisibleTab(tab.windowId, {format: 'png'}, function(image) {
         // image is base64
         chrome.storage.sync.get(function(config) {
-          crop(image, req.area, req.dpr, true, config.url, function(cropped) {
-            res({message: 'image', image: cropped});
+          crop(image, req.area, req.dpr, true, function(cropped) {
+            res({message: 'image', image: cropped, url: config.url});
           });
         });
       });
@@ -84,7 +87,7 @@ function show(data) {
   );
 }
 
-function crop (image, area, dpr, preserve, url, done) {
+function crop (image, area, dpr, preserve, done) {
   var top = area.y * dpr;
   var left = area.x * dpr;
   var width = area.w * dpr;
@@ -111,8 +114,6 @@ function crop (image, area, dpr, preserve, url, done) {
     );
 
     var cropped = canvas.toDataURL('image/png');
-
-    show({url: url, image: cropped});
     done(cropped);
   }
   img.src = image;

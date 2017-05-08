@@ -1,6 +1,8 @@
 
 var jcrop, selection;
 
+var queryResultId = 'query-result';
+
 var overlay = ((active) => (state) => {
   active = (typeof state === 'boolean') ? state : (state === null) ? active : !active;
   $('.jcrop-holder')[active ? 'show' : 'hide']();
@@ -50,16 +52,54 @@ var init = (done) => {
   })
 }
 
-var capture = function (force) {
-  if (selection && force) {
-    jcrop.release();
+var postporcess = function (data) {
+  $('#' + queryResultId).remove();
+  var q = $('<div id="' + queryResultId + '"></div>').css({
+    'height': '300px',
+    'width': '100%',
+    'position': 'fixed',
+    'z-index': '9999',
+    'bottom': '0',
+    'margin': 'auto',
+    'background': 'white'
+  });
+
+  $('.jcrop-holder').append(q);
+
+  var url = data.url;
+  var query = {image: data.image};
+  $.ajax({
+    url: url,
+    type: "POST",
+    data: JSON.stringify(query),
+    processData: false,
+    contentType: "application/json; charset=UTF-8",
+    success: function (res) {
+      q.append('<div style="height: 280px;"><img src="' + data.image + '"> query </div>');
+      for (var i = 0; i < res.result.length; i++) {
+        var type = res.result[i].type;
+        var imageUrl = res.result[i].thumbnail_url;
+        var url = res.result[i].url;
+        q.append('<div style="max-height: 300px" ><a href="' + url + '" target="_blank"><img src="' + imageUrl + '"></a>' + type + '</div>');
+      }
+      q.slick({
+        infinite: true,
+        slidesToShow: 9,
+        slidesToScroll: 1,
+        autoplay: true,
+        autoplaySpeed: 1000
+      });
+    }
+  });
+
+};
+
+var capture = function () {
+  if (selection) {
     setTimeout(function () {
       chrome.runtime.sendMessage({
         message: 'capture', area: selection, dpr: devicePixelRatio
-      }, function (res) {
-        overlay(false);
-        selection = null;
-      })
+      }, postporcess)
     }, 50);
   }
 };
@@ -84,7 +124,7 @@ chrome.runtime.onMessage.addListener((req, sender, res) => {
     }
     else {
       overlay();
-      capture(true);
+      capture();
     }
   }
   return true;
